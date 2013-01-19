@@ -1,0 +1,23 @@
+package cluster2;
+
+public class VPTree{
+    String[] tree;
+    int[] m;
+    int size;
+
+    public VPTree(int size) {
+        tree = new String[size];
+        m = new int[size];
+        size = 0;
+    }
+
+    public boolean insertValue(String str) {
+        if(size + 1 == tree.length) return false;
+        tree[size] = str;
+        size ++;
+        return true;
+    }
+
+    public createTree() {
+
+    }
