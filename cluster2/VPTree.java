@@ -5,17 +5,16 @@ import java.util.PriorityQueue;
 
 public class VPTree{
     class Entry {
-        int index;
         int median;
         String str;
-        public Entry(int i, int m, String s){
-            index = i;
+        public Entry(int m, String s){
             median = m;
             str = s;
         }
     }
     String[] tree;
     int[] m;
+    boolean[] map;
     int size;
     Comparator<Entry> entryComparator1;
     Comparator<Entry> entryComparator2;
@@ -24,6 +23,7 @@ public class VPTree{
 
         tree = new String[count];
         m = new int[count];
+        map = new boolean[count];
         size = 0;
         entryComparator1 = new Comparator<Entry>() {
             public int compare(Entry e1, Entry e2) {
@@ -78,24 +78,48 @@ public class VPTree{
             return;
         }
         int median = beg + (end-beg)/2;
-        PriorityQueue<Entry> left = new PriorityQueue<Entry>((end-beg)/2 + 1, entryComparator1); 
-        PriorityQueue<Entry> right = new PriorityQueue<Entry>((end-beg)/2 + 1, entryComparator2); 
+        PriorityQueue<Entry> left = new PriorityQueue<Entry>((end-beg)/2 + 1, entryComparator2); 
+        PriorityQueue<Entry> right = new PriorityQueue<Entry>((end-beg)/2 + 1, entryComparator1); 
         int sizeL = 0;
         int sizeR = 0;
+        Entry e;
         for(int i=beg; i <= end; i++) {
             if(i != median){
                 m[i] = getHammingDistance(tree[median], tree[i]);
-                Entry newEntry = new Entry(i, m[i], tree[i]);
-                if(sizeL >= sizeR){
-                    right.add(newEntry);
-                    sizeR ++;
-                }else{
+                Entry newEntry = new Entry(m[i], tree[i]);
+                if(sizeL == 0 || entryComparator1.compare(left.peek(), newEntry) < 0){
                     left.add(newEntry);
+                    // System.out.println("L:" + newEntry.str + ' ' + Integer.toString(newEntry.median));
                     sizeL ++;
+                } else {
+                    right.add(newEntry);
+                    // System.out.println("R:" + newEntry.str + ' ' + Integer.toString(newEntry.median));
+                    sizeR ++;
+                }
+                if(sizeL > sizeR + 1){
+                    e = left.poll();
+                    right.add(e);
+                    // System.out.println("LtoR:" + e.str + ' ' + Integer.toString(e.median));
+                    sizeL --; 
+                    sizeR ++;
+                }else if(sizeL < sizeR - 1){
+                    e = right.poll();
+                    left.add(e);
+                    // System.out.println("RtoL:" + e.str + ' ' + Integer.toString(e.median));
+                    sizeL ++;
+                    sizeR --;
+                }
+                if(sizeL != 0 && sizeR != 0) {
+                    while(entryComparator1.compare(left.peek(), right.peek()) > 0) {
+                        e = left.poll();
+                        right.add(e);
+                        e = right.poll();
+                        left.add(e);
+                    }
+
                 }
             }
         }
-        Entry e;
         if(sizeL > sizeR){
             e = left.poll();
             right.add(e);
@@ -121,77 +145,139 @@ public class VPTree{
         }
 
     }
-    public int getAdjNum(int beg, int end, String str, int dist){
-        int count = 0;
-        for(int i = beg; i < end; i++) {
-            int distToM = getHammingDistance(str, tree[i]);
-            if(distToM <= dist){
-                System.out.println(i);
-                System.out.println(m[i]);
-                System.out.println(distToM);
-                count +=1;
-            }
+    public int getAdjNum(){
+        int sum = 0;
+        for(int i = 0; i < size; i++) {
+            if(map[i] == true) sum++;
         }
-        return count;
+
+        System.out.println(sum);
+
+        return sum;
     }
 
-    public int searchAdjNum(int beg, int end, String str, int dist) {
+    public int searchAdjNum(int beg, int end, int index, int dist) {
+        String str = tree[index];
         int median = beg + (end-beg)/2;
-        System.out.println(str);
-        System.out.println(tree[median]);
         int distToM = getHammingDistance(str, tree[median]);
-        System.out.println(beg);
-        System.out.println(end);
-        // System.out.println(median);
-        System.out.println(m[median]);
-        System.out.println(distToM);
-        if(beg == end && distToM > dist) return 0;
-        else return 1;
-
-        if(m[median] < 2*dist) {
-        //    System.out.println(str);
-            
-            return getAdjNum(beg, end, str, dist);
-        }else{
-                
-            int sum = 0;
-            if(m[median] < (distToM - dist)){
-                // System.out.println(1);
-                if(end >= median+1) sum+= searchAdjNum(median+1, end, str, dist);
-                return sum;
-            }
-            else if(m[median] > (distToM + dist)){
-                // System.out.println(2);
-                if(beg <= median-1) sum+= searchAdjNum(beg, median-1, str, dist);
-                return sum;
-            }
-            else {
-                // System.out.println(3);
-                if(end >= median+1) sum+= searchAdjNum(median+1, end, str, dist);
-                if(beg <= median-1) sum+= searchAdjNum(beg, median-1, str, dist);
-                return sum;
+        // System.out.println(str);
+        // System.out.println(tree[median]);
+        // System.out.println(beg);
+        // System.out.println(end);
+        // // System.out.println(median);
+        // System.out.println(m[median]);
+        // System.out.println(distToM);
+        // System.out.println(map[median]);
+        int sum = -1;
+        if(beg == end){
+            if(distToM > dist) {
+                // not found
+                return -1;
+            }else{
+        // System.out.println(str);
+        // System.out.println(tree[median]);
+        // System.out.println(beg);
+        // System.out.println(end);
+        // // System.out.println(median);
+        // System.out.println(m[median]);
+        // System.out.println(distToM);
+        // System.out.println(map[beg]);
+                if(median != index){
+                    if(map[median] == false){
+                        map[median] = true;
+                        System.out.println(1);
+                        System.out.println(tree[median] + ' ' + Integer.toString(median) + "true");
+                        return sum = 1;
+                    }else{
+                        return sum = 0;
+                    }
+                }else{
+                    map[median] = true;
+                    System.out.println(2);
+                    System.out.println(tree[median] + ' ' + Integer.toString(median) + "true");
+                    return sum = 1;
+                }
             }
         }
+
+        // if(m[median] < 2*dist) {
+        // //    System.out.println(str);
+            
+            // return getAdjNum(beg, end, str, dist);
+        // }else{
+
+        int result;
+                
+            if(distToM <= dist) {
+                if(map[median] == false){
+                    map[median] = true;
+                    map[index] = true;
+                    System.out.println(3);
+                    System.out.println(tree[median] + ' ' + Integer.toString(median) + "true");
+                    System.out.println(tree[index] + ' ' + Integer.toString(index) + "true");
+                    sum = 1;
+                }else{
+                    map[index] = true;
+                    System.out.println(4);
+                    System.out.println(tree[index] + ' ' + Integer.toString(index) + "true");
+                    return sum = 0;
+                }
+            }
+            if(m[median] < (distToM - dist)){
+                if(end >= median+1) {
+                    result =  searchAdjNum(median+1, end, index, dist);
+                    sum &= (result >= 0? result:1);
+                }
+            }
+            else if(m[median] > (distToM + dist)){
+                if(beg <= median-1){
+                    result =  searchAdjNum(beg, median-1, index, dist);
+                    sum &= (result >= 0? result:1);
+                }
+            }
+            else {
+                if(beg <= median-1){
+                    result =  searchAdjNum(beg, median-1, index, dist);
+                    sum &= (result >= 0? result:1);
+                }
+                if(end >= median+1) {
+                    result =  searchAdjNum(median+1, end, index, dist);
+                    sum &= (result >= 0? result:1);
+                }
+            }
+            if(str.equals("000101")){
+                // System.out.println(sum);
+            }
+            return sum;
+        // }
     }
 
     public int searchAdj(int dist) {
         int sum = 0;
         for(int i = 0; i < tree.length; i++) {
-            int tmp = searchAdjNum(0, size-1, tree[i], dist);
-            if(tmp > 0){
+            if(map[i] == false){
                 System.out.println();
                 System.out.println(tree[i]);
+                int tmp = searchAdjNum(0, size-1, i, dist);
+                if(tmp > 0){
+                    sum += tmp;
+                }
                 System.out.println(tmp);
-            sum += (tmp-1);
+
             }
-
-
         }
-        return (sum)/2;
+        System.out.println(sum);
+        return sum;
     }
+
 
     public void createTree() {
         sortTree(0, size-1);
+    }
+    public void printTree() {
+        for(int i = 0; i < size; i++){
+            System.out.println(tree[i] + ' ' + Integer.toString(m[i]));
+        }
 
     }
 }
